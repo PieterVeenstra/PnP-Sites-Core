@@ -13,7 +13,6 @@
 // 
 namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.V201508
 {
-    using Microsoft.SharePoint.Client;
     using System.Xml.Serialization;
 
 
@@ -3833,7 +3832,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.V201508
 
         private bool maxVersionLimitFieldSpecified;
 
-        private DraftVisibilityType draftVersionVisibilityField;
+        private int draftVersionVisibilityField;
 
         private bool draftVersionVisibilityFieldSpecified;
 
@@ -4145,7 +4144,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.V201508
 
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public DraftVisibilityType DraftVersionVisibility
+        public int DraftVersionVisibility
         {
             get
             {
