@@ -7,6 +7,8 @@ using OfficeDevPnP.Core.Framework.Provisioning.Model;
 using OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers.TokenDefinitions;
 using System.Resources;
 using System.Collections;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
@@ -112,6 +114,15 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             _tokens.Add(new SiteCollectionTermGroupIdToken(web));
             _tokens.Add(new SiteCollectionTermGroupNameToken(web));
 
+            // Fields
+            var fields = web.Fields;
+            web.Context.Load(fields, flds => flds.Include(f => f.Title, f => f.InternalName));
+            web.Context.ExecuteQueryRetry();
+            foreach(var field in fields)
+            {
+                _tokens.Add(new FieldTitleToken(web, field.InternalName, field.Title));
+            }
+
             // Handle resources
             if (template.Localizations.Any())
             {
@@ -144,7 +155,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 
                     _tokens.Add(token);
                 }
-                
+
 
             }
             var sortedTokens = from t in _tokens
@@ -152,6 +163,24 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                                select t;
 
             _tokens = sortedTokens.ToList();
+        }
+
+
+
+        public List<Tuple<string, string>> GetResourceTokenResourceValues(string tokenValue)
+        {
+            List<Tuple<string, string>> resourceValues = new List<Tuple<string, string>>();
+            var resourceTokens = _tokens.Where(t => t is LocalizationToken && t.GetTokens().Contains(tokenValue));
+            foreach (LocalizationToken resourceToken in resourceTokens)
+            {
+                var entries = resourceToken.ResourceEntries;
+                foreach (var entry in entries)
+                {
+                    CultureInfo ci = new CultureInfo((int)entry.LCID);
+                    resourceValues.Add(new Tuple<string, string>(ci.Name, entry.Value));
+                }
+            }
+            return resourceValues;
         }
 
         public void Rebase(Web web)
@@ -170,6 +199,21 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         public string ParseString(string input)
         {
             return ParseString(input, null);
+        }
+
+        public IEnumerable<string> GetLeftOverTokens(string input)
+        {
+            List<string> values = new List<string>();
+            var matches = Regex.Matches(input, "(?<guid>\\{\\S{8}-\\S{4}-\\S{4}-\\S{4}-\\S{12}?\\})|(?<token>\\{.+?\\})").OfType<Match>().Select(m => m.Value);
+            foreach (var match in matches)
+            {
+                Guid gout;
+                if (!Guid.TryParse(match, out gout))
+                {
+                    values.Add(match);
+                }
+            }
+            return values;
         }
 
         public string ParseString(string input, params string[] tokensToSkip)
@@ -237,3 +281,4 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         }
     }
 }
+

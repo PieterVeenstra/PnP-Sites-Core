@@ -11,6 +11,7 @@ using System.Xml.Serialization;
 using OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.V201512;
 using ContentType = OfficeDevPnP.Core.Framework.Provisioning.Model.ContentType;
 using OfficeDevPnP.Core.Extensions;
+using Microsoft.SharePoint.Client;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
 {
@@ -45,7 +46,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
             XDocument xml = XDocument.Load(template);
 
             // Load the XSD embedded resource
-            Stream stream = typeof(XMLPnPSchemaV201508Formatter)
+            Stream stream = typeof(XMLPnPSchemaV201512Formatter)
                 .Assembly
                 .GetManifestResourceStream("OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.ProvisioningSchema-2015-12.xsd");
 
@@ -144,7 +145,9 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                      {
                          Key = bag.Key,
                          Value = bag.Value,
-                         Indexed = bag.Indexed
+                         Indexed = bag.Indexed,
+                         Overwrite = bag.Overwrite,
+                         OverwriteSpecified = true,
                      }).ToArray();
             }
             else
@@ -642,7 +645,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                              ImageUrl = customAction.ImageUrl,
                              Location = customAction.Location,
                              Name = customAction.Name,
-                             Rights = customAction.RightsValue,
+                             Rights = customAction.Rights != null ? customAction.Rights.FromBasePermissionsToString() : null,
                              RightsSpecified = true,
                              ScriptBlock = customAction.ScriptBlock,
                              ScriptSrc = customAction.ScriptSrc,
@@ -674,7 +677,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                              ImageUrl = customAction.ImageUrl,
                              Location = customAction.Location,
                              Name = customAction.Name,
-                             Rights = customAction.RightsValue,
+                             Rights = customAction.Rights != null ? customAction.Rights.FromBasePermissionsToString() : null,
                              RightsSpecified = true,
                              ScriptBlock = customAction.ScriptBlock,
                              ScriptSrc = customAction.ScriptSrc,
@@ -814,13 +817,13 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                      select new V201512.TermGroup
                      {
                          Name = grp.Name,
-                         ID = grp.Id.ToString(),
+                         ID = grp.Id != Guid.Empty ? grp.Id.ToString() : null,
                          Description = grp.Description,
                          TermSets = (
                             from termSet in grp.TermSets
                             select new V201512.TermSet
                             {
-                                ID = termSet.Id.ToString(),
+                                ID = termSet.Id != Guid.Empty ? termSet.Id.ToString() : null,
                                 Name = termSet.Name,
                                 IsAvailableForTagging = termSet.IsAvailableForTagging,
                                 IsOpenForTermCreation = termSet.IsOpenForTermCreation,
@@ -1185,7 +1188,8 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                     {
                         Key = bag.Key,
                         Value = bag.Value,
-                        Indexed = bag.Indexed
+                        Indexed = bag.Indexed,
+                        Overwrite = bag.OverwriteSpecified ? bag.Overwrite : false,
                     });
             }
 
@@ -1227,7 +1231,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                     LocaleId = source.RegionalSettings.LocaleIdSpecified ? source.RegionalSettings.LocaleId : 1033,
                     ShowWeeks = source.RegionalSettings.ShowWeeksSpecified ? source.RegionalSettings.ShowWeeks : false,
                     Time24 = source.RegionalSettings.Time24Specified ? source.RegionalSettings.Time24 : false,
-                    TimeZone = Int32.Parse(source.RegionalSettings.TimeZone),
+                    TimeZone = !String.IsNullOrEmpty(source.RegionalSettings.TimeZone) ? Int32.Parse(source.RegionalSettings.TimeZone) : 0,
                     WorkDayEndHour = source.RegionalSettings.WorkDayEndHourSpecified ? source.RegionalSettings.WorkDayEndHour.FromSchemaToTemplateWorkHourV201512() : Model.WorkHour.PM0600,
                     WorkDays = source.RegionalSettings.WorkDaysSpecified ? source.RegionalSettings.WorkDays : 5,
                     WorkDayStartHour = source.RegionalSettings.WorkDayStartHourSpecified ? source.RegionalSettings.WorkDayStartHour.FromSchemaToTemplateWorkHourV201512() : Model.WorkHour.AM0900,
@@ -1361,7 +1365,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
             {
                 result.SiteFields.AddRange(
                     from field in source.SiteFields.Any
-                    select new Field
+                    select new Model.Field
                     {
                         SchemaXml = field.OuterXml,
                     });
@@ -1444,13 +1448,13 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                                  }) : null),
                         (list.Views != null ?
                                 (from view in list.Views.Any
-                                 select new View
+                                 select new Model.View
                                  {
                                      SchemaXml = view.OuterXml,
                                  }) : null),
                         (list.Fields != null ?
                                 (from field in list.Fields.Any
-                                 select new Field
+                                 select new Model.Field
                                  {
                                      SchemaXml = field.OuterXml,
                                  }) : null),
@@ -1551,7 +1555,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                             ImageUrl = customAction.ImageUrl,
                             Location = customAction.Location,
                             Name = customAction.Name,
-                            RightsValue = customAction.RightsSpecified ? customAction.Rights : 0,
+                            Rights = customAction.RightsSpecified ? customAction.Rights.ToBasePermissions(): new BasePermissions(),
                             ScriptBlock = customAction.ScriptBlock,
                             ScriptSrc = customAction.ScriptSrc,
                             Sequence = customAction.SequenceSpecified ? customAction.Sequence : 100,
@@ -1573,7 +1577,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                             ImageUrl = customAction.ImageUrl,
                             Location = customAction.Location,
                             Name = customAction.Name,
-                            RightsValue = customAction.RightsSpecified ? customAction.Rights : 0,
+                            Rights = customAction.RightsSpecified ? customAction.Rights.ToBasePermissions() : new BasePermissions(),
                             ScriptBlock = customAction.ScriptBlock,
                             ScriptSrc = customAction.ScriptSrc,
                             Sequence = customAction.SequenceSpecified ? customAction.Sequence : 100,
@@ -1868,7 +1872,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                 from term in terms
                 select new V201512.Term
                 {
-                    ID = term.Id.ToString(),
+                    ID = term.Id != Guid.Empty ? term.Id.ToString() : null,
                     Name = term.Name,
                     Description = term.Description,
                     Owner = term.Owner,
@@ -2257,6 +2261,43 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
             result.Folder1 = folder.Folders != null ? (from child in folder.Folders select child.FromTemplateToSchemaFolderV201512()).ToArray() : null;
             return (result);
         }
+
+        public static string FromBasePermissionsToString(this BasePermissions basePermissions)
+        {
+            List<string> permissions = new List<string>();
+            foreach (var pk in (PermissionKind[])Enum.GetValues(typeof(PermissionKind)))
+            {
+                if (basePermissions.Has(pk) && pk != PermissionKind.EmptyMask)
+                {
+                    permissions.Add(pk.ToString());
+                }
+            }
+            return string.Join(",", permissions.ToArray());
+        }
+            
+        public static BasePermissions ToBasePermissions(this string basePermissionString)
+        {
+            BasePermissions bp = new BasePermissions();
+
+            // Is it an int value (for backwards compability)?
+            int permissionInt = 0;
+            if (int.TryParse(basePermissionString, out permissionInt))
+            {
+                bp.Set((PermissionKind)permissionInt);
+            }
+            else {
+                foreach (var pk in basePermissionString.Split(new char[] { ',' }))
+                {
+                    PermissionKind permissionKind = PermissionKind.AddAndCustomizePages;
+                    if (Enum.TryParse<PermissionKind>(basePermissionString, out permissionKind))
+                    {
+                        bp.Set(permissionKind);
+                    }
+                }
+            }
+            return bp;
+        }
+    
     }
 }
 

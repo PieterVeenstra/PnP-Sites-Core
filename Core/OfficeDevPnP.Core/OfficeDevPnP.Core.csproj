@@ -87,6 +87,9 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+  </PropertyGroup>
   <Choose>
     <When Condition=" '$(Configuration)' == 'debug' Or '$(Configuration)' == 'release' ">
       <ItemGroup>
@@ -444,6 +447,7 @@
     <Compile Include="Framework\Provisioning\Extensibility\IProvisioningExtensibilityTokenProvider.cs" />
     <Compile Include="Framework\Provisioning\Extensibility\IProvisioningExtensibilityProvider.cs" />
     <Compile Include="Framework\Provisioning\Model\DefaultDocumentCollection.cs" />
+    <Compile Include="Framework\Provisioning\Model\Deprecated\CustomAction.deprecated.cs" />
     <Compile Include="Framework\Provisioning\Model\FeatureCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\AddIn.cs" />
     <Compile Include="Framework\Provisioning\Model\AddInCollection.cs" />
@@ -527,6 +531,8 @@
     <Compile Include="Framework\Provisioning\Model\WorkflowSubscriptionCollection.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\Extensions\PnPMonitoredScopeExtensions.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\Extensions\SecurableObjectExtensions.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectContentHandlerBase.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\Extensions\UserResourceExtensions.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectWebSettings.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectPageContents.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectSupportedUILanguages.cs" />
@@ -567,6 +573,7 @@
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\ContentTypeIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\LocalizationToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\ResourceEntry.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\FieldTitleToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\WebPartIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\SiteCollectionTermGroupNameToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\SiteCollectionTermGroupId.cs" />
@@ -587,6 +594,7 @@
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\SiteToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenParser.cs" />
     <Compile Include="Framework\Provisioning\Providers\ITemplateFormatter.cs" />
+    <Compile Include="Framework\Provisioning\Providers\Json\BasePermissionsConverter.cs" />
     <Compile Include="Framework\Provisioning\Providers\Json\JsonAzureStorageTemplateProvider.cs" />
     <Compile Include="Framework\Provisioning\Providers\Json\JsonFileSystemTemplateProvider.cs" />
     <Compile Include="Framework\Provisioning\Providers\Json\JsonPnPFormatter.cs" />
@@ -623,6 +631,7 @@
     <Compile Include="Framework\TimerJobs\TimerJob.cs" />
     <Compile Include="Framework\TimerJobs\TimerJobRun.cs" />
     <Compile Include="Framework\TimerJobs\TimerJobRunEventArgs.cs" />
+    <Compile Include="AppModelExtensions\PnPClientContext.cs" />
     <Compile Include="Utilities\CookieReader.cs" />
     <Compile Include="Utilities\Deprecated\Utility.deprecated.cs" />
     <Compile Include="Utilities\FileTokenCache.cs" />
@@ -804,7 +813,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Framework\Provisioning\BaseTemplates\v15_0\CMSPUBLISHING0Template.xml" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Framework\Provisioning\BaseTemplates\Common\Publishing-Feature-Native-Files.xml" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Framework\Provisioning\BaseTemplates\v16_0\BLANKINTERNET0Template.xml" />
     <EmbeddedResource Include="Framework\Provisioning\BaseTemplates\v16_0\COMMUNITY0Template.xml" />
@@ -812,6 +823,18 @@
     <EmbeddedResource Include="Framework\Provisioning\BaseTemplates\v16_0\ENTERWIKI0Template.xml" />
     <EmbeddedResource Include="Framework\Provisioning\BaseTemplates\v16_0\SRCHCEN0Template.xml" />
     <EmbeddedResource Include="Framework\Provisioning\BaseTemplates\v16_0\STS0Template.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\BDR0Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\BICENTERSITE0Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\BLOG0Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\CMSPUBLISHING0Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\COMMUNITYPORTAL0Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\OFFILE1Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\PROJECTSITE0Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\SRCHCENTERLITE0Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\STS1Template.xml" />
+    <Content Include="Framework\Provisioning\BaseTemplates\v16_0\VISPRUS0Template.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
@@ -822,6 +845,13 @@
   </Target>
   <Target Name="AfterBuild" DependsOnTargets="">
   </Target>
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>Powershell.exe -ExecutionPolicy Unrestricted -file "$(SolutionDir)xmldoc2md.ps1" -xml "$(TargetDir)OfficeDevPnP.Core.XML" -xsl "$(SolutionDir)xmldoc2md.xsl" -output "$(SolutionDir)Documentation.md"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
